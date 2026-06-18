@@ -1246,7 +1246,303 @@ Nome
 Data de nascimento
 Idade aproximada
 ```
+# Como o `sizeof()` Calcula o Tamanho de uma Struct?
 
+Muitos iniciantes acreditam que o tamanho de uma struct é simplesmente a soma dos tamanhos de seus campos.
+
+Por exemplo:
+
+```c
+struct Pessoa {
+
+    char sexo;
+    int idade;
+
+};
+```
+
+Poderíamos pensar:
+
+```txt
+char -> 1 byte
+int  -> 4 bytes
+
+Total = 5 bytes
+```
+
+Mas ao executar:
+
+```c
+printf("%zu\n", sizeof(struct Pessoa));
+```
+
+o resultado normalmente será:
+
+```txt
+8
+```
+
+e não 5.
+
+---
+
+# Por Que Isso Acontece?
+
+Porque o compilador utiliza um mecanismo chamado:
+
+```txt
+Alinhamento de Memória (Memory Alignment)
+```
+
+para tornar o acesso à memória mais eficiente.
+
+---
+
+# Exemplo 1
+
+```c
+struct Pessoa {
+
+    char sexo;
+    int idade;
+
+};
+```
+
+Tamanhos:
+
+```txt
+char = 1 byte
+int  = 4 bytes
+```
+
+Memória:
+
+```txt
+sexo
+↓
++----+
+|  A |
++----+
+
+idade precisa começar
+em um endereço múltiplo de 4
+```
+
+Então o compilador adiciona:
+
+```txt
+3 bytes de preenchimento
+(padding)
+```
+
+Representação:
+
+```txt
+Byte 0  -> sexo
+Byte 1  -> padding
+Byte 2  -> padding
+Byte 3  -> padding
+Byte 4  -> idade
+Byte 5
+Byte 6
+Byte 7
+```
+
+Total:
+
+```txt
+8 bytes
+```
+
+---
+
+# Exemplo 2
+
+```c
+struct Exemplo {
+
+    char a;
+    char b;
+    int c;
+
+};
+```
+
+Soma simples:
+
+```txt
+1 + 1 + 4 = 6 bytes
+```
+
+Mas na memória:
+
+```txt
+Byte 0 -> a
+Byte 1 -> b
+Byte 2 -> padding
+Byte 3 -> padding
+Byte 4 -> c
+Byte 5
+Byte 6
+Byte 7
+```
+
+Resultado:
+
+```c
+sizeof(struct Exemplo)
+```
+
+normalmente:
+
+```txt
+8 bytes
+```
+
+---
+
+# Exemplo 3
+
+```c
+struct Pessoa {
+
+    char nome[50];
+    int idade;
+    float altura;
+    float peso;
+
+};
+```
+
+Soma dos campos:
+
+```txt
+nome   -> 50
+idade  -> 4
+altura -> 4
+peso   -> 4
+
+Total = 62 bytes
+```
+
+Mas geralmente:
+
+```c
+sizeof(struct Pessoa)
+```
+
+retorna:
+
+```txt
+64 bytes
+```
+
+porque o compilador adiciona bytes extras para alinhamento.
+
+---
+
+# Descobrindo na Prática
+
+```c
+#include <stdio.h>
+
+struct Pessoa {
+
+    char nome[50];
+    int idade;
+    float altura;
+    float peso;
+
+};
+
+int main() {
+
+    printf("%zu\n", sizeof(struct Pessoa));
+
+    return 0;
+}
+```
+
+Resultado comum:
+
+```txt
+64
+```
+
+---
+
+# Regra Geral
+
+O compilador normalmente:
+
+1. Reserva espaço para cada campo.
+2. Adiciona padding quando necessário.
+3. Faz o tamanho total da struct ser múltiplo do maior alinhamento utilizado.
+
+---
+
+# Como Ver o Tamanho de Cada Campo?
+
+```c
+printf("%zu\n", sizeof(char));
+printf("%zu\n", sizeof(int));
+printf("%zu\n", sizeof(float));
+printf("%zu\n", sizeof(double));
+```
+
+Saída comum:
+
+```txt
+1
+4
+4
+8
+```
+
+---
+
+# Exercício Mental
+
+Qual será o tamanho da struct abaixo?
+
+```c
+struct Teste {
+
+    char a;
+    double b;
+    char c;
+
+};
+```
+
+Soma simples:
+
+```txt
+1 + 8 + 1 = 10 bytes
+```
+
+Mas em muitos compiladores:
+
+```txt
+24 bytes
+```
+
+por causa do alinhamento exigido pelo `double`.
+
+---
+
+# Curiosidade
+
+Você pode verificar o deslocamento de cada campo usando:
+
+```c
+#include <stddef.h>
+
+printf("%zu\n", offsetof(struct Pessoa, idade));
+```
+
+Isso mostra em qual byte da struct aquele campo começa.
 ---
 
 # Resumo
