@@ -336,6 +336,339 @@ Ao final mostre todos os livros cadastrados.
 
 ---
 
+# Erro Muito Comum: Misturando `scanf()` e `fgets()`
+
+Durante o uso de structs é muito comum criarmos programas que recebem:
+
+- nomes;
+- títulos de livros;
+- nomes de autores;
+- descrições.
+
+Para esses casos normalmente utilizamos:
+
+```c
+fgets()
+```
+
+Mas muitos alunos acabam misturando:
+
+```c
+scanf()
+```
+
+com
+
+```c
+fgets()
+```
+
+e o programa começa a apresentar comportamentos estranhos.
+
+---
+
+# Exemplo do Problema
+
+Observe o código:
+
+```c
+#include <stdio.h>
+
+typedef struct {
+
+    char nome[50];
+    char autor[50];
+    int ano;
+
+} Livro;
+
+int main() {
+
+    Livro livros[3];
+
+    for(int i = 0; i < 3; i++) {
+
+        printf("Nome do livro: ");
+        fgets(livros[i].nome, 50, stdin);
+
+        printf("Autor: ");
+        fgets(livros[i].autor, 50, stdin);
+
+        printf("Ano: ");
+        scanf("%d", &livros[i].ano);
+
+    }
+
+    return 0;
+}
+```
+
+---
+
+# O Que Acontece?
+
+Ao executar:
+
+```txt
+Nome do livro: Dom Casmurro
+Autor: Machado de Assis
+Ano: 1899
+```
+
+o programa volta para a próxima repetição.
+
+Mas algo estranho acontece.
+
+O campo:
+
+```txt
+Nome do livro:
+```
+
+é pulado.
+
+---
+
+# Por Que Isso Acontece?
+
+O problema acontece porque você está misturando:
+
+```c
+scanf()
+```
+
+com
+
+```c
+fgets()
+```
+
+Quando executamos:
+
+```c
+scanf("%d", &livros[i].ano);
+```
+
+e digitamos:
+
+```txt
+1899↵
+```
+
+o `scanf()` lê apenas:
+
+```txt
+1899
+```
+
+Mas o ENTER continua armazenado no buffer de entrada.
+
+Representação:
+
+```txt
+Buffer antes:
+
+1899\n
+
+scanf lê:
+
+1899
+
+Buffer depois:
+
+\n
+```
+
+---
+
+# O Que o `fgets()` Enxerga?
+
+Na próxima repetição:
+
+```c
+fgets(livros[i].nome, 50, stdin);
+```
+
+o primeiro caractere encontrado é:
+
+```txt
+\n
+```
+
+Então o `fgets()` entende que a linha acabou.
+
+Na prática ele lê uma string vazia.
+
+Por isso parece que ele:
+
+```txt
+"PULOU"
+```
+
+a leitura.
+
+---
+
+# Representação Visual
+
+Primeira leitura:
+
+```txt
+Digite o ano:
+
+2025↵
+```
+
+Buffer:
+
+```txt
+2025\n
+```
+
+Após o scanf:
+
+```txt
+\n
+```
+
+Próximo fgets:
+
+```c
+fgets(nome, 50, stdin);
+```
+
+Lê imediatamente:
+
+```txt
+\n
+```
+
+Resultado:
+
+```txt
+nome = ""
+```
+
+---
+
+# Solução 1 — Consumir o ENTER
+
+Após o `scanf()`, podemos remover o ENTER do buffer.
+
+```c
+scanf("%d", &livros[i].ano);
+getchar();
+```
+
+Exemplo:
+
+```c
+printf("Ano: ");
+scanf("%d", &livros[i].ano);
+getchar();
+```
+
+Agora o próximo `fgets()` funcionará corretamente.
+
+---
+
+# Exemplo Corrigido
+
+```c
+for(int i = 0; i < 3; i++) {
+
+    printf("Nome do livro: ");
+    fgets(livros[i].nome, 50, stdin);
+
+    printf("Autor: ");
+    fgets(livros[i].autor, 50, stdin);
+
+    printf("Ano: ");
+    scanf("%d", &livros[i].ano);
+
+    getchar();
+
+}
+```
+
+---
+
+# Solução 2 — Utilizar Apenas `fgets()`
+
+Uma prática ainda melhor é utilizar apenas:
+
+```c
+fgets()
+```
+
+para todas as entradas.
+
+Exemplo:
+
+```c
+char entrada[20];
+
+fgets(entrada, 20, stdin);
+
+sscanf(entrada, "%d", &ano);
+```
+
+Assim evitamos problemas com buffer.
+
+---
+
+# Regra Prática
+
+Sempre que misturar:
+
+```c
+scanf()
+```
+
+e
+
+```c
+fgets()
+```
+
+lembre-se:
+
+```txt
+scanf() normalmente deixa o ENTER (\n) no buffer.
+
+fgets() lê esse ENTER e parece pular a entrada.
+```
+
+Solução rápida:
+
+```c
+getchar();
+```
+
+logo após o `scanf()`.
+
+---
+
+# Exercício
+
+Analise o código abaixo e explique por que o segundo `fgets()` é pulado:
+
+```c
+char nome[50];
+int idade;
+
+printf("Nome: ");
+fgets(nome, 50, stdin);
+
+printf("Idade: ");
+scanf("%d", &idade);
+
+printf("Nome novamente: ");
+fgets(nome, 50, stdin);
+```
+
+Depois corrija o programa.
+
 # Struct Dentro de Struct
 
 Até agora criamos estruturas contendo apenas:
